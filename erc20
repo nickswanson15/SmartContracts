@@ -1,6 +1,5 @@
 pragma solidity ^0.4.24;
  
- 
 contract SafeMath {
 
     function safeAdd(uint a, uint b) public pure returns (uint c) {
@@ -43,12 +42,10 @@ contract ERC20Interface {
     event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
 }
  
- 
 contract ApproveAndCallFallBack {
 
     function receiveApproval(address from, uint256 tokens, address token, bytes data) public;
 }
- 
  
 contract swanson is ERC20Interface, SafeMath {
 
@@ -69,19 +66,16 @@ contract swanson is ERC20Interface, SafeMath {
         balances[0xEFbB0E2E077AcB6F73ca443176CE02441AF0EA8A] = _totalSupply;
         emit Transfer(address(0), 0xEFbB0E2E077AcB6F73ca443176CE02441AF0EA8A, _totalSupply);
     }
-    
  
     function totalSupply() public constant returns (uint) {
     
         return _totalSupply  - balances[address(0)];
     }
  
- 
     function balanceOf(address tokenOwner) public constant returns (uint balance) {
     
         return balances[tokenOwner];
     }
- 
  
     function transfer(address to, uint tokens) public returns (bool success) {
     
@@ -91,14 +85,12 @@ contract swanson is ERC20Interface, SafeMath {
         return true;
     }
  
- 
     function approve(address spender, uint tokens) public returns (bool success) {
     
         allowed[msg.sender][spender] = tokens;
         emit Approval(msg.sender, spender, tokens);
         return true;
     }
- 
  
     function transferFrom(address from, address to, uint tokens) public returns (bool success) {
     
@@ -109,18 +101,14 @@ contract swanson is ERC20Interface, SafeMath {
         return true;
     }
     
- 
     function allowance(address tokenOwner, address spender) public constant returns (uint remaining) {
     
         return allowed[tokenOwner][spender];
     }
     
-    
     // my added 'mint' function
     
     function mintToken(address tokenOwner, uint256 tokens) internal virtual {
-    
-        require(tokenOwner != address(0), "mint token");
 
         beforeTransfer(address(0), tokenOwner, tokens);
 
@@ -130,18 +118,15 @@ contract swanson is ERC20Interface, SafeMath {
 
         afterTransfer(address(0), tokenOwner, tokens);
     } 
-    
-    
+     
     // my added 'burn' function
   
     function burnToken(address tokenOwner, uint256 tokens) internal virtual {
-    
-        require(tokenOwner != address(0), "burn token");
 
         beforeTransfer(tokenOwner, address(0), tokens);
 
         uint256 accountBalance = balances[tokenOwner];
-        require(accountBalance >= tokens, "ERC20: burn amount exceeds balance");
+        require(accountBalance >= tokens, "burn amount exceeds current supply");
         unchecked {
             balances[tokenOwner] = accountBalance - tokens;
         }
@@ -152,8 +137,7 @@ contract swanson is ERC20Interface, SafeMath {
         afterTransfer(tokenOwner, address(0), tokens);
     }
     
-    
-//  helper function for mintToken and burnToken
+    //  helper function for mintToken and burnToken
 
     function beforeTransfer(
         address from,
@@ -161,15 +145,13 @@ contract swanson is ERC20Interface, SafeMath {
         uint256 tokens
     ) internal virtual {}
     
-    
- //  helper function for mintToken and burnToken
+    //  helper function for mintToken and burnToken
  
     function afterTransfer(
         address from,
         address to,
         uint256 tokens
     ) internal virtual {}
-    
     
     function approveAndCall(address spender, uint tokens, bytes data) public returns (bool success) {
     
@@ -178,7 +160,6 @@ contract swanson is ERC20Interface, SafeMath {
         ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, this, data);
         return true;
     }
- 
  
     function () public payable {
     
