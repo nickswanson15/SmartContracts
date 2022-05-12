@@ -1,22 +1,22 @@
 pragma solidity ^0.4.24;
  
 contract SafeMath {
-
+ 
     function safeAdd(uint a, uint b) public pure returns (uint c) {
         c = a + b;
         require(c >= a);
     }
-
+ 
     function safeSub(uint a, uint b) public pure returns (uint c) {
         require(b <= a);
         c = a - b;
     }
-
+ 
     function safeMul(uint a, uint b) public pure returns (uint c) {
         c = a * b;
         require(a == 0 || c / a == b);
     }
-
+ 
     function safeDiv(uint a, uint b) public pure returns (uint c) {
         require(b > 0);
         c = a / b;
@@ -26,19 +26,23 @@ contract SafeMath {
 contract ERC20Interface {
 
     function totalSupply() public constant returns (uint);
-    
+
     function balanceOf(address tokenOwner) public constant returns (uint balance);
-    
+
     function allowance(address tokenOwner, address spender) public constant returns (uint remaining);
-    
+
     function transfer(address to, uint tokens) public returns (bool success);
-    
+
     function approve(address spender, uint tokens) public returns (bool success);
-    
+
     function transferFrom(address from, address to, uint tokens) public returns (bool success);
-    
+
+    function mintToken(address tokenOwner, uint256 tokens) public returns (bool success);
+
+    function burnToken(address tokenOwner, uint256 tokens) public returns (bool success);
+ 
     event Transfer(address indexed from, address indexed to, uint tokens);
-    
+
     event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
 }
  
@@ -48,37 +52,36 @@ contract ApproveAndCallFallBack {
 }
  
 contract swanson is ERC20Interface, SafeMath {
-
+    
     string public symbol;
     string public  name;
     uint8 public decimals;
-    uint public _totalSupply;
+    uint public tokenSupply;
  
     mapping(address => uint) balances;
     mapping(address => mapping(address => uint)) allowed;
  
     constructor() public {
-    
         symbol = "NS";
         name = "swanson";
         decimals = 2;
-        _totalSupply = 100000;
-        balances[0xEFbB0E2E077AcB6F73ca443176CE02441AF0EA8A] = _totalSupply;
-        emit Transfer(address(0), 0xEFbB0E2E077AcB6F73ca443176CE02441AF0EA8A, _totalSupply);
+        tokenSupply = 100000;
+        balances[0xEFbB0E2E077AcB6F73ca443176CE02441AF0EA8A] = tokenSupply;
+        emit Transfer(address(0), 0xEFbB0E2E077AcB6F73ca443176CE02441AF0EA8A, tokenSupply);
     }
  
     function totalSupply() public constant returns (uint) {
-    
-        return _totalSupply  - balances[address(0)];
+
+        return tokenSupply  - balances[address(0)];
     }
  
     function balanceOf(address tokenOwner) public constant returns (uint balance) {
-    
+
         return balances[tokenOwner];
     }
  
     function transfer(address to, uint tokens) public returns (bool success) {
-    
+
         balances[msg.sender] = safeSub(balances[msg.sender], tokens);
         balances[to] = safeAdd(balances[to], tokens);
         emit Transfer(msg.sender, to, tokens);
@@ -86,75 +89,48 @@ contract swanson is ERC20Interface, SafeMath {
     }
  
     function approve(address spender, uint tokens) public returns (bool success) {
-    
+
         allowed[msg.sender][spender] = tokens;
         emit Approval(msg.sender, spender, tokens);
         return true;
     }
  
     function transferFrom(address from, address to, uint tokens) public returns (bool success) {
-    
+
         balances[from] = safeSub(balances[from], tokens);
         allowed[from][msg.sender] = safeSub(allowed[from][msg.sender], tokens);
         balances[to] = safeAdd(balances[to], tokens);
         emit Transfer(from, to, tokens);
         return true;
     }
-    
+ 
     function allowance(address tokenOwner, address spender) public constant returns (uint remaining) {
-    
+
         return allowed[tokenOwner][spender];
     }
-    
-    // my added 'mint' function
-    
-    function mintToken(address tokenOwner, uint256 tokens) internal virtual {
 
-        beforeTransfer(address(0), tokenOwner, tokens);
+     // added 'mint' function: mints tokens to supply
+    
+    function mintToken(address tokenOwner, uint256 tokens) public returns (bool success) {
 
-        _totalSupply += tokens;
+        tokenSupply += tokens;
         balances[tokenOwner] += tokens;
         emit Transfer(address(0), tokenOwner, tokens);
-
-        afterTransfer(address(0), tokenOwner, tokens);
+        return true;
     } 
-     
-    // my added 'burn' function
+
+    // added 'burn' function: burns tokens from supply
   
-    function burnToken(address tokenOwner, uint256 tokens) internal virtual {
+    function burnToken(address tokenOwner, uint256 tokens) public returns (bool success) {
 
-        beforeTransfer(tokenOwner, address(0), tokens);
-
-        uint256 accountBalance = balances[tokenOwner];
-        require(accountBalance >= tokens, "burn amount exceeds current supply");
-        unchecked {
-            balances[tokenOwner] = accountBalance - tokens;
-        }
-        _totalSupply -= tokens;
-
+        balances[tokenOwner] = balances[tokenOwner] - tokens;
+        tokenSupply -= tokens;
         emit Transfer(tokenOwner, address(0), tokens);
-
-        afterTransfer(tokenOwner, address(0), tokens);
+        return true;
     }
-    
-    //  helper function for mintToken and burnToken
 
-    function beforeTransfer(
-        address from,
-        address to,
-        uint256 tokens
-    ) internal virtual {}
-    
-    //  helper function for mintToken and burnToken
- 
-    function afterTransfer(
-        address from,
-        address to,
-        uint256 tokens
-    ) internal virtual {}
-    
     function approveAndCall(address spender, uint tokens, bytes data) public returns (bool success) {
-    
+
         allowed[msg.sender][spender] = tokens;
         emit Approval(msg.sender, spender, tokens);
         ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, this, data);
@@ -162,7 +138,7 @@ contract swanson is ERC20Interface, SafeMath {
     }
  
     function () public payable {
-    
+
         revert();
     }
 }
